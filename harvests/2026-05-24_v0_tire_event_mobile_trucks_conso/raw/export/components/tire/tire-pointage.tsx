@@ -10,17 +10,13 @@ import { ConfirmationScreen } from './confirmation-screen'
 import { SuccessScreen } from './success-screen'
 
 export function TirePointage() {
-  const { step, setOnline, syncEvents } = useTireStore()
+  const { step, setOnline } = useTireStore()
 
-  // Online/offline detection
+  // Détection en ligne / hors ligne (indicatif · pas de POST en MVP)
   useEffect(() => {
-    const handleOnline = () => {
-      setOnline(true)
-      syncEvents()
-    }
+    const handleOnline = () => setOnline(true)
     const handleOffline = () => setOnline(false)
 
-    // Initial state
     setOnline(navigator.onLine)
 
     window.addEventListener('online', handleOnline)
@@ -30,9 +26,9 @@ export function TirePointage() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [setOnline, syncEvents])
+  }, [setOnline])
 
-  // Render current step
+  // Étape courante
   switch (step) {
     case 0:
       return <EventTypeSelector />

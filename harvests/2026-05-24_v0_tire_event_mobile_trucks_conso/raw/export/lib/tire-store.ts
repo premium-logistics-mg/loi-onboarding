@@ -2,16 +2,23 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { TireEvent, EventType, TreadMeasurement, DecisionNote } from './tire-types'
+import { TireEvent, EventType } from './tire-types'
+
+// Write-path désactivé en MVP : on enregistre en local seulement (store + persist).
+// TODO write-path (patron DDV · brancher Postgres quand MOBILE_WRITES_LIVE)
+export const MOBILE_WRITES_LIVE = false
 
 interface TireStore {
-  // Current event being created
+  // Événement en cours de saisie
   currentEvent: Partial<TireEvent>
   step: number
-  
-  // Offline queue
+
+  // File locale (pas de POST tant que MOBILE_WRITES_LIVE = false)
   pendingEvents: TireEvent[]
-  
+
+  // Récap du dernier événement enregistré (pour l'écran succès)
+  lastEvent: TireEvent | null
+
   // Actions
   setEventType: (type: EventType) => void
   updateCurrentEvent: (data: Partial<TireEvent>) => void
@@ -19,7 +26,6 @@ interface TireStore {
   prevStep: () => void
   resetEvent: () => void
   submitEvent: () => void
-  syncEvents: () => Promise<void>
   isOnline: boolean
   setOnline: (online: boolean) => void
 }
@@ -30,31 +36,32 @@ export const useTireStore = create<TireStore>()(
       currentEvent: {},
       step: 0,
       pendingEvents: [],
+      lastEvent: null,
       isOnline: true,
-      
-      setEventType: (type) => set({ 
+
+      setEventType: (type) => set({
         currentEvent: { type },
-        step: 1 
+        step: 1,
       }),
-      
+
       updateCurrentEvent: (data) => set((state) => ({
-        currentEvent: { ...state.currentEvent, ...data }
+        currentEvent: { ...state.currentEvent, ...data },
       })),
-      
+
       nextStep: () => set((state) => ({ step: state.step + 1 })),
-      
-      prevStep: () => set((state) => ({ 
-        step: Math.max(0, state.step - 1) 
+
+      prevStep: () => set((state) => ({
+        step: Math.max(0, state.step - 1),
       })),
-      
-      resetEvent: () => set({ 
+
+      resetEvent: () => set({
         currentEvent: {},
-        step: 0 
+        step: 0,
       }),
-      
+
       submitEvent: () => {
-        const { currentEvent, isOnline, pendingEvents } = get()
-        
+        const { currentEvent, pendingEvents } = get()
+
         const event: TireEvent = {
           id: crypto.randomUUID(),
           type: currentEvent.type!,
@@ -66,56 +73,32 @@ export const useTireStore = create<TireStore>()(
           reference: currentEvent.reference!,
           profile: currentEvent.profile,
           currentKm: currentEvent.currentKm!,
+          wear: currentEvent.wear,
           photo: currentEvent.photo,
           proofPhotos: currentEvent.proofPhotos,
           treadDepth: currentEvent.treadDepth,
           decisionNote: currentEvent.decisionNote,
           timestamp: new Date(),
-          synced: isOnline,
+          synced: false,
         }
-        
-        // TODO: write-path - Send to API when online
-        // POST /api/tire-events with event data
-        
-        if (!isOnline) {
-          set({ 
-            pendingEvents: [...pendingEvents, event],
-            currentEvent: {},
-            step: 5 // Success screen
-          })
-        } else {
-          set({ 
-            currentEvent: {},
-            step: 5 // Success screen
-          })
-        }
+
+        // TODO write-path (patron DDV · brancher Postgres quand MOBILE_WRITES_LIVE)
+        // MVP : enregistrement LOCAL uniquement, aucun POST backend.
+        set({
+          pendingEvents: [...pendingEvents, event],
+          lastEvent: event,
+          currentEvent: {},
+          step: 5, // écran succès
+        })
       },
-      
-      syncEvents: async () => {
-        const { pendingEvents, isOnline } = get()
-        
-        if (!isOnline || pendingEvents.length === 0) return
-        
-        // TODO: write-path - Sync pending events to API
-        // POST /api/tire-events/batch with pendingEvents
-        
-        const syncedEvents = pendingEvents.map(e => ({ ...e, synced: true }))
-        console.log('[v0] Syncing events:', syncedEvents)
-        
-        set({ pendingEvents: [] })
-      },
-      
-      setOnline: (online) => {
-        set({ isOnline: online })
-        if (online) {
-          get().syncEvents()
-        }
-      },
+
+      setOnline: (online) => set({ isOnline: online }),
     }),
     {
       name: 'tire-pointage-storage',
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         pendingEvents: state.pendingEvents,
+        lastEvent: state.lastEvent,
       }),
     }
   )
