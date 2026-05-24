@@ -1,0 +1,133 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  LOI D82 design system · couleurs EXACTES
+  Brand · navy #0B2540 · teal #1A8E7E · cream #F5F1E8 · beige #E8E2D6
+  texte secondaire #4A5568 · error #B8421E · green #2D8659 · orange #C77E2A
+  Dark (DÉFAUT) · bg #080B14 · surface #161A24 · border #242835
+  texte #F0EEEB · teal-light #3EAA9B
+  Rayon · 4px max.
+*/
+
+/* Light = option (fond cream) */
+:root {
+  --background: #f5f1e8;
+  --foreground: #0b2540;
+  --card: #ffffff;
+  --card-foreground: #0b2540;
+  --popover: #ffffff;
+  --popover-foreground: #0b2540;
+  --primary: #1a8e7e;
+  --primary-foreground: #ffffff;
+  --secondary: #e8e2d6;
+  --secondary-foreground: #0b2540;
+  --muted: #e8e2d6;
+  --muted-foreground: #4a5568;
+  --accent: #1a8e7e;
+  --accent-foreground: #ffffff;
+  --destructive: #b8421e;
+  --destructive-foreground: #ffffff;
+  --border: #e8e2d6;
+  --input: #e8e2d6;
+  --ring: #1a8e7e;
+  --radius: 4px;
+
+  /* Tokens applicatifs */
+  --warning: #c77e2a;
+  --warning-foreground: #ffffff;
+  --success: #2d8659;
+  --success-foreground: #ffffff;
+}
+
+/* Dark = DÉFAUT */
+.dark {
+  --background: #080b14;
+  --foreground: #f0eeeb;
+  --card: #161a24;
+  --card-foreground: #f0eeeb;
+  --popover: #161a24;
+  --popover-foreground: #f0eeeb;
+  --primary: #1a8e7e;
+  --primary-foreground: #f0eeeb;
+  --secondary: #242835;
+  --secondary-foreground: #f0eeeb;
+  --muted: #242835;
+  --muted-foreground: #99a0ad;
+  --accent: #3eaa9b;
+  --accent-foreground: #080b14;
+  --destructive: #b8421e;
+  --destructive-foreground: #f0eeeb;
+  --border: #242835;
+  --input: #242835;
+  --ring: #3eaa9b;
+
+  --warning: #c77e2a;
+  --warning-foreground: #f0eeeb;
+  --success: #2d8659;
+  --success-foreground: #f0eeeb;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), 'Inter', sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Scrollbar discret mobile */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+/* Tap highlight teal sur mobile */
+@media (hover: none) {
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: rgba(26, 142, 126, 0.2);
+  }
+}
