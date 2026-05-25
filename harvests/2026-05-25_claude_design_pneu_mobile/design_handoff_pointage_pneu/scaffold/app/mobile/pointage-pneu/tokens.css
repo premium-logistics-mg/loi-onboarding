@@ -1,0 +1,57 @@
+/* D82 tokens — Pointage Pneu. Import once via app/globals.css
+   if the repo doesn't already expose --cockpit-*.
+   Light theme is chosen for the field-mechanic under-sun use case
+   (§7 of LOI context). Dark variant kept for parity. */
+
+:root,
+[data-theme="light"] {
+  --cockpit-paper:        #F5F1E8;
+  --cockpit-card:         #FFFFFF;
+  --cockpit-navy:         #0B2540;
+  --cockpit-navy-2:       #142F4F;
+  --cockpit-navy-3:       #1E3E66;
+
+  --cockpit-teal:         #1A8E7E;
+  --cockpit-teal-deep:    #0F6E60;
+  --cockpit-teal-soft:    #D3E8E2;
+
+  --cockpit-status-green: #2D8659;
+  --cockpit-status-orange:#C77E2A;
+  --cockpit-status-red:   #B8421E;
+
+  --cockpit-text:         #0B2540;
+  --cockpit-steel:        #5E6B7C;
+  --cockpit-steel-2:      #8A95A3;
+  --cockpit-line:         #D7D2C2;
+  --cockpit-line-soft:    #E6E1D2;
+
+  --cockpit-on-navy:      #FFFFFF;
+  --cockpit-on-navy-soft: #B7C9E0;
+  --cockpit-on-navy-dim:  #8FA5C3;
+}
+
+[data-theme="dark"] {
+  --cockpit-paper:        #080B14;
+  --cockpit-card:         #161A24;
+  --cockpit-navy:         #0B1424;
+  --cockpit-navy-2:       #1A2236;
+  --cockpit-navy-3:       #242C40;
+
+  --cockpit-teal:         #3EAA9B;
+  --cockpit-teal-deep:    #1A8E7E;
+  --cockpit-teal-soft:    rgba(62,170,155,0.18);
+
+  --cockpit-status-green: #2D8659;
+  --cockpit-status-orange:#C77E2A;
+  --cockpit-status-red:   #B8421E;
+
+  --cockpit-text:         #F0EEEB;
+  --cockpit-steel:        #A0A8B5;
+  --cockpit-steel-2:      #6E7686;
+  --cockpit-line:         #242835;
+  --cockpit-line-soft:    #1B1F2A;
+
+  --cockpit-on-navy:      #FFFFFF;
+  --cockpit-on-navy-soft: #B7C9E0;
+  --cockpit-on-navy-dim:  #8FA5C3;
+}
