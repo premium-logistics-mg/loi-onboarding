@@ -1,0 +1,51 @@
+/* Tokens D82 — Atelier Méca. À fusionner avec globals.css existant.
+   Le repo loi-cockpit doit déjà exposer --cockpit-* — sinon ces lignes les définissent. */
+
+:root {
+  /* Brand */
+  --cockpit-navy:           #0B2540;
+  --cockpit-teal:           #1A8E7E;
+  --cockpit-teal-deep:      #0F6E60;
+  --cockpit-teal-soft:      rgba(26, 142, 126, 0.18);
+  --cockpit-cream:          #F5F1E8;
+
+  /* Status — D82 strict */
+  --cockpit-status-green:        #2D8659;  /* Terminé uniquement */
+  --cockpit-status-orange:       #C77E2A;  /* Bloquer / Bloqué / En attente */
+  --cockpit-status-orange-soft:  rgba(199, 126, 42, 0.20);
+  --cockpit-status-red:          #B8421E;  /* Critique (point inspection) */
+  --cockpit-status-red-soft:     rgba(184, 66, 30, 0.20);
+}
+
+/* Dark — par défaut (cabine / atelier couvert) */
+:root, [data-theme='dark'] {
+  --cockpit-paper:        #061629;
+  --cockpit-surface:      #0F2A47;
+  --cockpit-surface-2:    #173659;
+  --cockpit-surface-mute: #0B2540;
+  --cockpit-line:         #1E3E66;
+  --cockpit-line-soft:    #15304F;
+  --cockpit-divider:      #1A3556;
+  --cockpit-text:         #F5F1E8;
+  --cockpit-text-2:       #B7C9E0;
+  --cockpit-text-3:       #7E94B5;
+  --cockpit-text-4:       #56708F;
+}
+
+/* Light — plein soleil (atelier ouvert) */
+[data-theme='light'] {
+  --cockpit-paper:        #F5F1E8;
+  --cockpit-surface:      #FFFFFF;
+  --cockpit-surface-2:    #FBF7EC;
+  --cockpit-surface-mute: #EDE8D8;
+  --cockpit-line:         #D7D2C2;
+  --cockpit-line-soft:    #E6E1D2;
+  --cockpit-divider:      #CFC9B6;
+  --cockpit-text:         #0B2540;
+  --cockpit-text-2:       #384A63;
+  --cockpit-text-3:       #5E6B7C;
+  --cockpit-text-4:       #8A95A3;
+}
+
+/* Garantie : tabular-nums sur tout chiffre. Le code applique font-mono manuellement, on borde. */
+.font-mono { font-variant-numeric: tabular-nums; letter-spacing: 0.3px; }
