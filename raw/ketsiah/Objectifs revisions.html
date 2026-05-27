@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Objectifs du board — revisions</title>
+<link rel="stylesheet" href="loi-tokens.css" />
+<style>
+  html, body { background: var(--bg); margin: 0; }
+  /* Artboard inner reset — the parent container sets its own bg/typography */
+  .frame {
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    padding: 28px 32px;
+    background: var(--bg);
+    font-family: var(--font-sans);
+    color: var(--fg-1);
+    overflow: hidden;
+  }
+  .frame .pl-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .frame .pl-label .i {
+    width: 14px; height: 14px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--fg-3);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-sans); font-size: 9px; font-weight: 600;
+  }
+  .frame .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .frame .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .frame .card-head .t {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+  .frame .card-head .t .num { color: var(--fg-1); }
+  .frame .card-head .actions {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--fg-3); font-size: 11px;
+  }
+  .frame .card-head .filter {
+    font-family: var(--font-sans);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: var(--fg-2);
+    background: transparent;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .frame .card-head .filter[aria-pressed="true"] {
+    background: var(--accent-soft); border-color: transparent; color: var(--accent);
+  }
+
+  /* ------------ Shared atoms ------------ */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    padding: 4px 7px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    color: var(--fg-2);
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .pill .k {
+    color: var(--fg-3);
+    font-family: var(--font-sans);
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+  .pill.ok      { background: var(--ok-soft);   color: var(--ok);   border-color: transparent; }
+  .pill.warn    { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .pill.err     { background: var(--err-soft);  color: var(--err);  border-color: transparent; }
+  .pill.ghost   { background: transparent; }
+
+  .owner {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-2);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .so {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .due {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--fg-3);
+  }
+  .pct {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .pct.ok   { color: var(--ok); }
+  .pct.warn { color: var(--warn); }
+  .pct.err  { color: var(--err); }
+  .pct .u { font-family: var(--font-sans); font-size: 11px; color: var(--fg-3); margin-left: 2px; font-weight: 500; }
+  .bar {
+    position: relative;
+    height: 3px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar > .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
+  .bar > .tick {
+    position: absolute; top: -2px; bottom: -2px; width: 1px;
+    background: var(--fg-3); opacity: 0.55;
+  }
+  .bar.thin { height: 2px; }
+
+  /* status accents on left edge of compact rows */
+  .edge {
+    position: relative;
+  }
+  .edge::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 10px; bottom: 10px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--c, var(--fg-mute));
+  }
+  .edge[data-s="ok"]   { --c: var(--ok); }
+  .edge[data-s="warn"] { --c: var(--warn); }
+  .edge[data-s="err"]  { --c: var(--err); }
+
+  /* ------------ Variant A: Slim row ------------ */
+  .va-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto 140px 64px;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 20px 12px 24px;
+    border-top: 1px solid var(--border);
+    position: relative;
+  }
+  .va-row:first-of-type { border-top: 0; }
+  .va-row .meta { display: flex; flex-direction: column; gap: 2px; }
+  .va-row .meta .so-id { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.04em; }
+  .va-row .meta .owner { font-size: 11px; color: var(--fg-2); }
+  .va-row .title-col { min-width: 0; }
+  .va-row .title { font-size: 13px; font-weight: 500; color: var(--fg-1); margin-bottom: 4px; }
+  .va-row .sub { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+  .va-row .sub b { color: var(--fg-1); font-weight: 500; }
+  .va-row .sub .sep { color: var(--fg-mute); margin: 0 6px; }
+  .va-row .chips { display: inline-flex; gap: 6px; align-items: center; }
+  .va-row .right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .va-row .right .bar { width: 100%; }
+
+  /* ------------ Variant B: Table ------------ */
+  .vb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .vb-table thead th {
+    text-align: left;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 60%, var(--surface));
+  }
+  .vb-table tbody td {
+    padding: 12px 12px;
+    border-top: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .vb-table tbody tr:first-child td { border-top: 0; }
+  .vb-table tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 50%, transparent); }
+  .vb-table .obj { display: flex; flex-direction: column; gap: 2px; padding-left: 10px; position: relative; }
+  .vb-table .obj.edge::before { left: 0; top: 4px; bottom: 4px; }
+  .vb-table .obj .name { font-size: 13px; font-weight: 500; color: var(--fg-1); }
+  .vb-table .obj .id   { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.04em; }
+  .vb-table .nm  { font-family: var(--font-mono); font-size: 12px; color: var(--fg-1); }
+  .vb-table .nm .lbl { color: var(--fg-3); font-family: var(--font-sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+  .vb-table .delta-warn { color: var(--warn); }
+  .vb-table .delta-err  { color: var(--err); }
+  .vb-table .delta-ok   { color: var(--ok); }
+  .vb-table .progress-cell { width: 200px; }
+  .vb-table .progress-cell .row { display: flex; align-items: center; gap: 10px; }
+  .vb-table .progress-cell .bar { flex: 1; }
+  .vb-table .pct-sm { font-family: var(--font-mono); font-size: 13px; font-weight: 500; min-width: 38px; text-align: right; }
+  .vb-table .due-cell { font-family: var(--font-mono); font-size: 11px; color: var(--fg-2); }
+  .vb-table .own-cell { font-family: var(--font-mono); font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ------------ Variant C: Stacked compact card ------------ */
+  .vc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+  .vc-cell {
+    background: var(--surface);
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 14px;
+    row-gap: 6px;
+    align-items: start;
+    position: relative;
+  }
+  .vc-cell .head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .vc-cell .head .so-id { font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.04em; }
+  .vc-cell .head .owner { font-family: var(--font-mono); font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.04em; }
+  .vc-cell .head .due { margin-left: auto; }
+  .vc-cell .title { grid-column: 1 / -1; font-size: 14px; font-weight: 600; color: var(--fg-1); letter-spacing: -0.01em; }
+  .vc-cell .pct  { justify-self: end; }
+  .vc-cell .sub  { grid-column: 1 / -1; font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); display: flex; gap: 10px; flex-wrap: wrap; }
+  .vc-cell .sub b { color: var(--fg-1); font-weight: 500; }
+  .vc-cell .bar  { grid-column: 1 / -1; }
+  /* full-width 5th cell when the grid has odd count */
+  .vc-grid > .vc-cell.span-full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="service-client.jsx"></script>
+  <script type="text/babel" src="objectifs.jsx"></script>
+</body>
+</html>
