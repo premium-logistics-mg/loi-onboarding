@@ -1,0 +1,177 @@
+/* ============================================================
+   LOI · Living Operating Intelligence
+   Design System D82 — colors_and_type.css
+   Tokens mappés 1:1 sur le repo loi-cockpit-source (Library V2).
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+/* ---------- 1. PALETTE BRUTE — classes pl-* du repo ---------- */
+:root {
+  --pl-navy:        #0B2540;
+  --pl-navy-deep:   #061829;
+  --pl-teal:        #1A8E7E;          /* accent UNIQUE — light */
+  --pl-teal-light:  #3EAA9B;          /* accent dark             */
+  --pl-teal-tint:   #C9E6E1;
+
+  --pl-cream:       #F5F1E8;
+  --pl-beige:       #E8E2D6;
+
+  --pl-green:       #2D8659;
+  --pl-green-tint:  #C6E9D2;
+  --pl-orange:      #C77E2A;
+  --pl-orange-tint: #FCEABF;
+  --pl-error:       #B8421E;
+  --pl-error-tint:  #FAD5D0;
+}
+
+/* ---------- 2. --cockpit-* · LIGHT (défaut :root) ------------- */
+:root {
+  color-scheme: light;
+
+  --cockpit-bg:               var(--pl-cream);
+  --cockpit-surface:          #FFFFFF;
+  --cockpit-card:             #FFFFFF;
+  --cockpit-card-border:      var(--pl-beige);
+  --cockpit-text-primary:     var(--pl-navy);
+  --cockpit-text-secondary:   #4A5568;
+  --cockpit-text-muted:       #8A93A0;
+  --cockpit-accent:           var(--pl-teal);
+  --cockpit-divider:          var(--pl-beige);
+  --cockpit-sidebar-bg:       #FFFFFF;
+}
+
+/* ---------- 3. --cockpit-* · DARK (.dark — défaut produit) ---- */
+.dark, [data-theme="dark"] {
+  color-scheme: dark;
+
+  --cockpit-bg:               #080B14;
+  --cockpit-surface:          #161A24;
+  --cockpit-card:             #161A24;
+  --cockpit-card-border:      #242835;
+  --cockpit-text-primary:     #F0EEEB;
+  --cockpit-text-secondary:   rgba(240, 238, 235, 0.78);
+  --cockpit-text-muted:       rgba(240, 238, 235, 0.60);
+  --cockpit-accent:           var(--pl-teal-light);
+  --cockpit-divider:          #242835;
+  --cockpit-sidebar-bg:       #0E1320;
+}
+
+/* ---------- 4. ALIAS LOCAUX (utilisés par le kit) ------------- */
+/* Le kit local référence --bg/--fg-1/--accent etc. — alias les --cockpit-*. */
+:root {
+  --bg:           var(--cockpit-bg);
+  --bg-elev-1:    color-mix(in srgb, var(--cockpit-surface) 60%, var(--cockpit-bg));
+  --surface:      var(--cockpit-surface);
+  --surface-2:    color-mix(in srgb, var(--cockpit-surface) 70%, var(--cockpit-bg));
+  --border:       var(--cockpit-card-border);
+  --border-soft:  color-mix(in srgb, var(--cockpit-card-border) 60%, var(--cockpit-bg));
+  --sidebar-bg:   var(--cockpit-sidebar-bg);
+
+  --fg-1:   var(--cockpit-text-primary);
+  --fg-2:   var(--cockpit-text-secondary);
+  --fg-3:   var(--cockpit-text-muted);
+  --fg-mute: color-mix(in srgb, var(--cockpit-text-muted) 60%, transparent);
+
+  --accent:       var(--cockpit-accent);
+  --accent-fg:    #FFFFFF;
+  --accent-soft:  color-mix(in srgb, var(--cockpit-accent) 12%, transparent);
+
+  --ok:           var(--pl-green);
+  --warn:         var(--pl-orange);
+  --err:          var(--pl-error);
+  --ok-soft:      color-mix(in srgb, var(--pl-green) 14%, transparent);
+  --warn-soft:    color-mix(in srgb, var(--pl-orange) 14%, transparent);
+  --err-soft:     color-mix(in srgb, var(--pl-error) 14%, transparent);
+
+  --focus-ring:   0 0 0 2px color-mix(in srgb, var(--cockpit-accent) 45%, transparent);
+  --shadow-1:     0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 2px rgba(11,37,64,0.06);
+  --shadow-2:     0 12px 28px rgba(11,37,64,0.10);
+}
+
+.dark, [data-theme="dark"] {
+  --accent-fg:    #07140F;            /* lisible sur teal-light sombre */
+  --shadow-1:     0 1px 0 rgba(255,255,255,0.02) inset, 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-2:     0 8px 24px rgba(0,0,0,0.45);
+}
+
+/* ---------- 5. TYPOGRAPHIE ----------------------------------- */
+:root {
+  --font-sans:  "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:  "IBM Plex Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+
+  --fs-display: 64px;
+  --fs-hero:    48px;
+  --fs-h1:      32px;
+  --fs-h2:      24px;
+  --fs-h3:      18px;
+  --fs-body:    14px;
+  --fs-small:   12px;
+  --fs-micro:   11px;
+
+  --lh-tight:   1.05;
+  --lh-snug:    1.2;
+  --lh-normal:  1.45;
+
+  --tr-tight:   -0.02em;
+  --tr-label:   0.08em;
+  --tr-mono:    -0.01em;
+}
+
+/* ---------- 6. ÉLÉMENTS BASE --------------------------------- */
+html, body {
+  background: var(--bg);
+  color: var(--fg-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .h1 { font-size: var(--fs-h1); font-weight: 600; line-height: var(--lh-snug); letter-spacing: var(--tr-tight); color: var(--fg-1); margin: 0; }
+h2, .h2 { font-size: var(--fs-h2); font-weight: 600; line-height: var(--lh-snug); letter-spacing: var(--tr-tight); color: var(--fg-1); margin: 0; }
+h3, .h3 { font-size: var(--fs-h3); font-weight: 600; line-height: var(--lh-snug); color: var(--fg-1); margin: 0; }
+p, .p   { font-size: var(--fs-body); line-height: var(--lh-normal); color: var(--fg-2); margin: 0; }
+
+.display-number, .hero-number {
+  font-family: var(--font-mono);
+  font-size: var(--fs-display); font-weight: 500;
+  line-height: var(--lh-tight); letter-spacing: var(--tr-mono);
+  font-variant-numeric: tabular-nums; color: var(--fg-1);
+}
+.mono, code, kbd, samp, .num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tr-mono);
+}
+.label, .micro-label {
+  font-size: var(--fs-micro); font-weight: 500;
+  text-transform: uppercase; letter-spacing: var(--tr-label);
+  color: var(--fg-3);
+}
+.small { font-size: var(--fs-small); color: var(--fg-2); }
+.unit  { font-family: var(--font-sans); font-size: 0.45em; font-weight: 500; color: var(--fg-3); margin-left: 0.2em; vertical-align: 0.2em; }
+
+/* ---------- 7. SPACING / RADIUS / STROKE --------------------- */
+:root {
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+  --radius-1: 2px; --radius-2: 4px; --radius-3: 8px; --radius-4: 12px;
+  --radius-pill: 999px;
+  --stroke: 1px; --stroke-2: 1.5px;
+}
+
+/* ---------- 8. UTILITAIRES ----------------------------------- */
+.tabular   { font-variant-numeric: tabular-nums; }
+.uppercase { text-transform: uppercase; letter-spacing: var(--tr-label); }
+.divider   { height: 1px; background: var(--border); border: 0; }
+.focus-ring:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* Indicateur visible « À CONFIRMER » — utile dans les vues piloté-mock */
+.confirm-badge {
+  display: inline-block; font-family: var(--font-sans);
+  font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 2px;
+  color: var(--warn); background: var(--warn-soft);
+  text-transform: uppercase; letter-spacing: var(--tr-label);
+}
