@@ -1,0 +1,360 @@
+<!doctype html>
+<html class="dark" lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1440">
+  <title>LOI · Cockpit Lalatiana · Customer Service Transit</title>
+  <link rel="stylesheet" href="colors_and_type.css">
+  <style>
+    html, body { height: 100%; }
+    body { margin: 0; }
+    *::-webkit-scrollbar { width: 10px; height: 10px; }
+    *::-webkit-scrollbar-track { background: transparent; }
+    *::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+    *::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--fg-3) 40%, transparent); }
+
+    #app { display: flex; height: 100vh; min-height: 760px; background: var(--bg); color: var(--fg-1); }
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .scroll { flex: 1; overflow-y: auto; padding-bottom: 32px; }
+
+    @keyframes ll-toast-in { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    input::placeholder, textarea::placeholder { color: var(--fg-mute); }
+    button { font-family: inherit; }
+    select option { background: var(--surface); color: var(--fg-1); }
+
+    .focusable:focus-visible { outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+  </style>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- data -->
+  <script src="data.js"></script>
+
+  <!-- atoms & chrome -->
+  <script type="text/babel" src="components/Sidebar.jsx"></script>
+  <script type="text/babel" src="components/TopBar.jsx"></script>
+  <script type="text/babel" src="components/PillarBar.jsx"></script>
+  <script type="text/babel" src="components/Dialog.jsx"></script>
+  <script type="text/babel" src="components/Chrome.jsx"></script>
+
+  <!-- views -->
+  <script type="text/babel" src="components/DossierTable.jsx"></script>
+  <script type="text/babel" src="components/Claims.jsx"></script>
+  <script type="text/babel" src="components/Vue.jsx"></script>
+  <script type="text/babel" src="components/Other.jsx"></script>
+  <script type="text/babel" src="components/Tools.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    function App() {
+      const [tab, setTab] = useState("vue");
+      const [dossiers, setDossiers] = useState(window.SEED_DOSSIERS);
+      const [carnet, setCarnet] = useState(window.SEED_CARNET);
+      const [claims, setClaims] = useState(window.SEED_CLAIMS);
+      const [selectedRef, setSelectedRef] = useState(null);
+      const [tool, setTool] = useState(null); // dossier tools
+      const [claimTool, setClaimTool] = useState(null); // { key: 'accuser'|..., claim }
+      const [toolPrefill, setToolPrefill] = useState(null);
+      const [toasts, setToasts] = useState([]);
+      const toastId = useRef(0);
+
+      // counts for tool panels (this month — heuristic)
+      const counts = useMemo(() => {
+        const cat = (c) => carnet.filter(e => e.cat === c).length;
+        return {
+          ouvertures: cat("Ouverture"),
+          cotations:  cat("Cotation"),
+          relances:   cat("Relance"),
+          escalades:  cat("Escalade"),
+        };
+      }, [carnet]);
+
+      const selectedDossier = useMemo(
+        () => dossiers.find(d => d.ref === selectedRef),
+        [dossiers, selectedRef]
+      );
+
+      // re-render lucide icons after each render
+      useEffect(() => {
+        const t = setTimeout(() => window.lucide && lucide.createIcons(), 50);
+        return () => clearTimeout(t);
+      }); // every render
+
+      function pushToast(t) {
+        const id = ++toastId.current;
+        setToasts(prev => [...prev, { id, ...t }]);
+        setTimeout(() => setToasts(prev => prev.filter(x => x.id !== id)), 5500);
+      }
+
+      function addCarnet(entry) {
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, "0");
+        const months = ["jan", "fév", "mar", "avr", "mai", "juin", "juil", "août", "sep", "oct", "nov", "déc"];
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        const ts = `${dd} ${months[now.getMonth()]} · ${hh}:${mm}`;
+        setCarnet(prev => [{ ts, owner: "Lalatiana", ...entry }, ...prev]);
+      }
+
+      // ───── ACTIONS ─────
+      function handleCreateDossier(newDoss, notes) {
+        setDossiers(prev => [newDoss, ...prev]);
+        addCarnet({
+          cat: "Ouverture", ref: newDoss.ref,
+          text: `Dossier ouvert · ${newDoss.client} · ${newDoss.cargo}${notes ? " · note : " + notes : ""}`,
+        });
+        pushToast({
+          title: `Dossier ${newDoss.ref} ouvert`,
+          body: `${newDoss.client} · ${newDoss.cargo}. Cascade Transit démarrée.`,
+          icon: "folder-plus",
+        });
+        setSelectedRef(newDoss.ref);
+      }
+
+      function handleCotation({ ref, cost, marge, reglement, validite }) {
+        setDossiers(prev => prev.map(d => d.ref === ref ? {
+          ...d,
+          etape: d.etape === "Docs en attente" ? "Cotation émise" : d.etape,
+          cotation: d.cotation || `COT-26${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`,
+          marge,
+        } : d));
+        addCarnet({
+          cat: "Cotation", ref,
+          text: `Cotation émise · marge ${String(marge).replace(".", ",")} % · règlement ${reglement}${validite ? " · validité " + validite : ""}`,
+        });
+        pushToast({ title: "Cotation émise", body: `Dossier ${ref} · marge ${String(marge).replace(".", ",")} %`, icon: "send" });
+      }
+
+      function handleRelance({ ref, type, canal }) {
+        addCarnet({
+          cat: "Relance", ref,
+          text: `Relance · ${type} · canal ${canal}`,
+        });
+        pushToast({ title: "Relance envoyée", body: `Dossier ${ref} · ${type} · ${canal}`, icon: "send-horizontal", tone: "warn" });
+      }
+
+      function handleEscalade({ ref, motif, urgence }) {
+        setDossiers(prev => prev.map(d => d.ref === ref ? { ...d, escalated: true } : d));
+        addCarnet({
+          cat: "Escalade", ref,
+          text: `Escalade Tudi · urgence ${urgence} · motif : ${motif}`,
+        });
+        pushToast({ title: "Escaladé à Tudi", body: `Dossier ${ref} · urgence ${urgence}`, icon: "alert-triangle", tone: urgence === "rouge" ? "err" : "warn" });
+      }
+
+      // ───── CLAIM HANDLERS ─────
+      function updateClaim(ref, patch) {
+        setClaims(prev => prev.map(c => c.ref === ref ? { ...c, ...patch } : c));
+      }
+      function handleAccuser(claim, { canal }) {
+        updateClaim(claim.ref, {
+          etape: "Accusée",
+          slaAccuse: { hours: claim.slaAccuse?.hours || 0.5, ok: true },
+        });
+        addCarnet({ cat: "Accusé", ref: claim.ref, text: `Accusé réception · canal ${canal} · template envoyé` });
+        pushToast({ title: "Accusé envoyé", body: `${claim.ref} · ${claim.client} · ${canal}`, icon: "check-circle-2" });
+      }
+      function handleInvestiguer(claim, { dept, motif, delai }) {
+        updateClaim(claim.ref, { etape: "Investigation", ownerAval: dept });
+        addCarnet({ cat: "Investigation", ref: claim.ref, text: `Investigation · assignée ${dept} · délai ${delai} · ${motif}` });
+        pushToast({ title: "Investigation lancée", body: `${claim.ref} · assignée ${dept}`, icon: "search" });
+      }
+      function handleProposer(claim, { typeProp, texte, impact }) {
+        updateClaim(claim.ref, { etape: "Proposition envoyée" });
+        const impactStr = impact ? ` · impact ${impact} MGA` : "";
+        addCarnet({ cat: "Proposition", ref: claim.ref, text: `Proposition · ${typeProp}${impactStr} · ${texte.substring(0, 80)}${texte.length > 80 ? "…" : ""}` });
+        pushToast({ title: "Proposition envoyée", body: `${claim.ref} · ${typeProp}`, icon: "send-horizontal" });
+      }
+      function handleCloturer(claim, { issue, note }) {
+        const etape = issue === "acceptée" ? "Acceptée" : issue === "refusée" ? "Refusée" : "Escaladée Tudi";
+        updateClaim(claim.ref, { etape, closed: issue !== "arbitrage", ownerAval: issue === "arbitrage" ? "Tudi" : "—" });
+        addCarnet({ cat: "Clôture", ref: claim.ref, text: `Clôturée · ${issue}${note ? " · " + note : ""}` });
+        pushToast({ title: "Réclamation clôturée", body: `${claim.ref} · ${issue}`, icon: "check-circle-2", tone: issue === "refusée" ? "warn" : undefined });
+      }
+      function handleEscaladerClaim(claim, { motif, urgence }) {
+        updateClaim(claim.ref, { etape: "Escaladée Tudi", ownerAval: "Tudi" });
+        addCarnet({ cat: "Escalade claim", ref: claim.ref, text: `Escalade Tudi · urgence ${urgence} · ${motif}` });
+        pushToast({ title: "Réclamation escaladée à Tudi", body: `${claim.ref} · urgence ${urgence}`, icon: "alert-triangle", tone: urgence === "rouge" ? "err" : "warn" });
+      }
+
+      function handleClaimAction(claim, key) {
+        setClaimTool({ key, claim });
+      }
+
+      // Row action mapping
+      function handleRowAction(dossier, actionLbl) {
+        setSelectedRef(dossier.ref);
+        if (actionLbl === "Compléter docs") {
+          setToolPrefill({ ref: dossier.ref });
+          setTool("relance"); // relance to ask for pieces
+        } else if (actionLbl === "Cotation") {
+          setToolPrefill({ ref: dossier.ref });
+          setTool("cotation");
+        } else if (actionLbl === "Relancer") {
+          setToolPrefill({ ref: dossier.ref });
+          setTool("relance");
+        } else if (actionLbl === "Escalader") {
+          setToolPrefill({ ref: dossier.ref });
+          setTool("escalade");
+        } else if (actionLbl === "Suivre") {
+          setTab("docs");
+        }
+      }
+
+      // ───── RENDER ─────
+      return (
+        <>
+          <LalatianaSidebar
+            active={tab}
+            onChange={setTab}
+            counts={{ carnet: carnet.length, docs: dossiers.length }}
+          />
+          <div className="main">
+            <LalatianaTopBar />
+            <LalatianaPillarBar />
+            <div className="scroll">
+              <Breadcrumb />
+
+              {tab === "vue" && (
+                <div style={{ padding: "8px 28px 0" }}>
+                  <OrientationStrip />
+                  <ClaimsBloc claims={claims} onAction={handleClaimAction} />
+                  <ToolsBloc
+                    counts={counts}
+                    onOpen={(k) => { setToolPrefill(null); setTool(k); }}
+                  />
+
+                  {/* BLOC 3 · MES DOSSIERS */}
+                  <div style={{
+                    padding: 24, marginBottom: 18,
+                    background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12,
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, gap: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--fg-1)" }}>Mes dossiers en cours</div>
+                        <div style={{ fontSize: 12, color: "var(--fg-3)" }}>
+                          <span style={{ fontFamily: "IBM Plex Mono, monospace", color: "var(--fg-1)" }}>{dossiers.filter(d => d.etape !== "Facturée").length}</span> actifs ·
+                          <span style={{ fontFamily: "IBM Plex Mono, monospace", color: "var(--err)", marginLeft: 6 }}>
+                            {dossiers.filter(d => d.etape === "Circuit Rouge" || d.etape === "Docs en attente").length}
+                          </span> en alerte
+                          {selectedRef && (
+                            <span style={{ marginLeft: 12, color: "var(--accent)" }}>
+                              · sélection <span style={{ fontFamily: "IBM Plex Mono, monospace" }}>{selectedRef}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        {selectedRef && (
+                          <button onClick={() => { setSelectedRef(null); }} style={{
+                            fontSize: 11.5, padding: "5px 10px", borderRadius: 4,
+                            background: "var(--surface-2)", color: "var(--fg-2)",
+                            border: "1px solid var(--border)", cursor: "pointer",
+                          }}>Désélectionner</button>
+                        )}
+                        <span style={{ fontSize: 11, color: "var(--fg-mute)" }}>Tri · priorité · alertes en tête</span>
+                      </div>
+                    </div>
+                    <DossierTable
+                      dossiers={dossiers}
+                      selected={selectedRef}
+                      onSelect={(ref) => { setSelectedRef(ref); setTab("docs"); }}
+                      onAction={handleRowAction}
+                    />
+                  </div>
+
+                  <SignalsBloc disputesCount={3} />
+                </div>
+              )}
+
+              {tab === "scores" && <Scores />}
+              {tab === "carnet" && <Carnet items={carnet} />}
+              {tab === "docs"   && <Documentation dossiers={dossiers} selectedRef={selectedRef} onSelect={setSelectedRef} claims={claims} />}
+              {tab === "profil" && <Profil />}
+
+              <div style={{
+                padding: "20px 28px 8px", marginTop: 24,
+                fontFamily: "IBM Plex Mono, monospace", fontSize: 10,
+                color: "var(--fg-mute)", display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)",
+              }}>
+                <span>lalatiana-cs · cockpit Transit · D82</span>
+                <span>session locale · {carnet.length} entrées au carnet</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ───── DIALOGS ───── */}
+          <OuvrirDossierDialog
+            open={tool === "ouvrir"}
+            onClose={() => { setTool(null); setToolPrefill(null); }}
+            dossiers={dossiers}
+            onCreate={handleCreateDossier}
+          />
+          <CotationDialog
+            open={tool === "cotation"}
+            onClose={() => { setTool(null); setToolPrefill(null); }}
+            dossiers={dossiers}
+            onSubmit={handleCotation}
+          />
+          <RelanceDialog
+            open={tool === "relance"}
+            onClose={() => { setTool(null); setToolPrefill(null); }}
+            dossiers={dossiers}
+            onSubmit={handleRelance}
+          />
+          <EscaladeDialog
+            open={tool === "escalade"}
+            onClose={() => { setTool(null); setToolPrefill(null); }}
+            dossiers={dossiers}
+            onSubmit={handleEscalade}
+          />
+
+          {/* CLAIM DIALOGS */}
+          <AccuserDialog
+            open={claimTool?.key === "accuser"}
+            claim={claimTool?.claim}
+            onClose={() => setClaimTool(null)}
+            onSubmit={(p) => handleAccuser(claimTool.claim, p)}
+          />
+          <InvestiguerDialog
+            open={claimTool?.key === "investiguer"}
+            claim={claimTool?.claim}
+            onClose={() => setClaimTool(null)}
+            onSubmit={(p) => handleInvestiguer(claimTool.claim, p)}
+          />
+          <ProposerDialog
+            open={claimTool?.key === "proposer"}
+            claim={claimTool?.claim}
+            onClose={() => setClaimTool(null)}
+            onSubmit={(p) => handleProposer(claimTool.claim, p)}
+          />
+          <CloturerDialog
+            open={claimTool?.key === "cloturer"}
+            claim={claimTool?.claim}
+            onClose={() => setClaimTool(null)}
+            onSubmit={(p) => handleCloturer(claimTool.claim, p)}
+          />
+          <EscaladerClaimDialog
+            open={claimTool?.key === "escalader"}
+            claim={claimTool?.claim}
+            onClose={() => setClaimTool(null)}
+            onSubmit={(p) => handleEscaladerClaim(claimTool.claim, p)}
+          />
+
+          <Toast toasts={toasts} onDismiss={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("app")).render(<App />);
+  </script>
+</body>
+</html>
