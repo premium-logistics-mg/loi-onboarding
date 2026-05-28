@@ -57,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr" className={`${inter.variable} ${ibmPlexMono.variable}`}>
+    <html lang="fr" className={`dark ${inter.variable} ${ibmPlexMono.variable}`}>
       <body className="font-sans antialiased bg-background min-h-screen">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

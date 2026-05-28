@@ -18,10 +18,10 @@ function Wheel({ position, isSelected, onSelect }: WheelProps) {
     <button
       onClick={onSelect}
       className={cn(
-        "w-9 h-9 rounded-full border-2 transition-all active:scale-95 flex items-center justify-center text-xs font-mono",
-        isSelected 
-          ? "bg-primary border-primary text-primary-foreground" 
-          : "bg-card border-border hover:border-primary/60 text-muted-foreground",
+        "w-11 h-11 rounded-full border-2 transition-all active:scale-95 flex items-center justify-center text-xs font-mono",
+        isSelected
+          ? "bg-primary border-primary text-primary-foreground"
+          : "bg-card border-border text-muted-foreground",
         isInner && "scale-90",
         isOuter && "scale-100"
       )}
@@ -109,26 +109,26 @@ export function AxlePositionSelector() {
     <div className="flex flex-col min-h-screen p-4 pb-8">
       {/* Header */}
       <header className="mb-4">
-        <button 
+        <button
           onClick={prevStep}
-          className="flex items-center gap-2 text-sm text-muted-foreground mb-3 active:opacity-70"
+          className="flex items-center gap-2 text-sm text-muted-foreground mb-3 active:opacity-70 min-h-[44px]"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Retour
         </button>
-        <h1 className="text-xl font-semibold text-foreground">Position Essieu</h1>
+        <h1 className="text-xl font-semibold text-foreground">Position du pneu</h1>
         <p className="text-sm text-muted-foreground">
-          Tapez sur la position du pneu
+          Touchez la roue concernée
         </p>
       </header>
 
       {/* Truck Diagram */}
-      <div className="flex-1 bg-card rounded-xl p-4 border-2 border-border">
-        {/* Cab indicator */}
+      <div className="flex-1 bg-card rounded-sm p-4 border-2 border-border">
+        {/* Cabine */}
         <div className="flex justify-center mb-6">
-          <div className="w-24 h-8 bg-muted rounded-t-xl flex items-center justify-center">
+          <div className="w-24 h-8 bg-muted rounded-t-sm flex items-center justify-center">
             <span className="text-xs font-mono text-muted-foreground">CABINE</span>
           </div>
         </div>
@@ -199,19 +199,19 @@ export function AxlePositionSelector() {
 
       {/* Selected Position Display */}
       {selectedPosition && (
-        <div className="mt-4 p-3 bg-primary/10 rounded-xl border border-primary/30">
+        <div className="mt-4 p-3 bg-primary/10 rounded-sm border border-primary/30">
           <p className="text-center font-mono text-primary font-semibold">
             {selectedPosition.label}
           </p>
         </div>
       )}
 
-      {/* Continue Button */}
+      {/* Bouton continuer (bas d'écran · pouce) */}
       <button
         onClick={handleContinue}
         disabled={!currentEvent.axlePosition}
         className={cn(
-          "mt-4 w-full py-4 rounded-xl font-semibold transition-all active:scale-[0.98]",
+          "mt-4 w-full py-4 rounded-sm font-semibold transition-all active:scale-[0.98] min-h-[44px]",
           currentEvent.axlePosition
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground cursor-not-allowed"

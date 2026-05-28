@@ -1,42 +1,47 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useTireStore } from '@/lib/tire-store'
-import { 
-  BRANDS, 
-  REFERENCES, 
-  PRESET_OBSERVATIONS, 
-  URGENCY_LABELS, 
+import {
+  BRANDS,
+  REFERENCES,
+  PRESET_OBSERVATIONS,
+  URGENCY_LABELS,
   ESCALATION_LABELS,
   type UrgencyLevel,
   type EscalationTarget,
   type TreadMeasurement,
-  type DecisionNote
+  type DecisionNote,
 } from '@/lib/tire-types'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 
-type CameraMode = 'none' | 'barcode' | 'photo' | 'odometer' | 'proof'
+// Lecture d'un fichier image natif → data URL (pas de getUserMedia/canvas)
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
 
 export function TireDetailsForm() {
   const { updateCurrentEvent, nextStep, prevStep, currentEvent } = useTireStore()
-  const [cameraMode, setCameraMode] = useState<CameraMode>('none')
-  const [cameraError, setCameraError] = useState<string | null>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
+  const proofInputRef = useRef<HTMLInputElement>(null)
 
-  const isEclatement = currentEvent.type === 'eclatement'
-  
+  const isRemove = currentEvent.type === 'depose'
+
   const [formData, setFormData] = useState({
     brand: currentEvent.brand || '',
     serialNumber: currentEvent.serialNumber || '',
     reference: currentEvent.reference || '',
     profile: currentEvent.profile || '',
     currentKm: currentEvent.currentKm?.toString() || '',
-    photo: currentEvent.photo || '',
-    proofPhotos: currentEvent.proofPhotos || [] as string[],
+    proofPhotos: currentEvent.proofPhotos || ([] as string[]),
   })
+
+  const [wear, setWear] = useState<boolean>(currentEvent.wear ?? false)
 
   const [treadDepth, setTreadDepth] = useState<TreadMeasurement>({
     exterior: currentEvent.treadDepth?.exterior || 0,
@@ -51,74 +56,25 @@ export function TireDetailsForm() {
     customComment: currentEvent.decisionNote?.customComment || '',
   })
 
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop())
-      streamRef.current = null
-    }
-    setCameraMode('none')
-  }, [])
+  // Photo obligatoire si Dépose OU usure signalée
+  const photoRequired = isRemove || wear
 
-  const startCamera = async (mode: CameraMode) => {
-    setCameraError(null)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false,
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-      }
-      setCameraMode(mode)
-    } catch {
-      setCameraError('Camera non disponible')
-      setCameraMode('none')
-    }
-  }
-
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return
-    
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    
-    ctx.drawImage(video, 0, 0)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
-    
-    if (cameraMode === 'photo') {
-      setFormData(prev => ({ ...prev, photo: dataUrl }))
-    } else if (cameraMode === 'proof') {
-      setFormData(prev => ({ 
-        ...prev, 
-        proofPhotos: [...prev.proofPhotos, dataUrl].slice(0, 4) // Max 4 proof photos
-      }))
-    }
-    
-    stopCamera()
+  const handleProofFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const incoming = Array.from(files).slice(0, 4 - formData.proofPhotos.length)
+    const dataUrls = await Promise.all(incoming.map(fileToDataUrl))
+    setFormData(prev => ({
+      ...prev,
+      proofPhotos: [...prev.proofPhotos, ...dataUrls].slice(0, 4),
+    }))
   }
 
   const removeProofPhoto = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      proofPhotos: prev.proofPhotos.filter((_, i) => i !== index)
+      proofPhotos: prev.proofPhotos.filter((_, i) => i !== index),
     }))
   }
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop())
-      }
-    }
-  }, [])
 
   const handleContinue = () => {
     updateCurrentEvent({
@@ -127,7 +83,7 @@ export function TireDetailsForm() {
       reference: formData.reference,
       profile: formData.profile,
       currentKm: parseInt(formData.currentKm) || 0,
-      photo: formData.photo,
+      wear,
       proofPhotos: formData.proofPhotos,
       treadDepth: (treadDepth.exterior || treadDepth.center || treadDepth.interior) ? treadDepth : undefined,
       decisionNote: decisionNote.observation ? decisionNote : undefined,
@@ -135,95 +91,35 @@ export function TireDetailsForm() {
     nextStep()
   }
 
-  const isValid = formData.brand && formData.serialNumber && formData.reference && formData.currentKm &&
-    (!isEclatement || (formData.photo || formData.proofPhotos.length > 0))
-
-  // Camera overlay
-  if (cameraMode !== 'none') {
-    return (
-      <div className="fixed inset-0 bg-background z-50 flex flex-col">
-        <header className="p-4 flex items-center justify-between">
-          <button 
-            onClick={stopCamera}
-            className="text-foreground p-2"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <span className="text-sm font-medium text-foreground">
-            {cameraMode === 'barcode' && 'Scanner code-barres'}
-            {cameraMode === 'photo' && 'Photo du pneu'}
-            {cameraMode === 'odometer' && 'Photo compteur'}
-            {cameraMode === 'proof' && 'Photo preuve'}
-          </span>
-          <div className="w-10" />
-        </header>
-        
-        <div className="flex-1 relative">
-          <video
-            ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"
-            playsInline
-            muted
-          />
-          
-          {cameraMode === 'barcode' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-64 h-32 border-2 border-primary rounded-lg" />
-            </div>
-          )}
-        </div>
-        
-        <div className="p-6 flex justify-center">
-          {cameraMode === 'barcode' ? (
-            <button
-              onClick={() => {
-                // Simulate barcode scan for demo
-                setFormData(prev => ({ ...prev, serialNumber: 'SN-' + Math.random().toString(36).substring(2, 10).toUpperCase() }))
-                stopCamera()
-              }}
-              className="px-8 py-4 bg-primary text-primary-foreground rounded-xl font-semibold"
-            >
-              Simuler scan
-            </button>
-          ) : (
-            <button
-              onClick={capturePhoto}
-              className="w-16 h-16 rounded-full bg-primary border-4 border-primary-foreground flex items-center justify-center"
-            >
-              <div className="w-12 h-12 rounded-full bg-primary-foreground" />
-            </button>
-          )}
-        </div>
-        
-        <canvas ref={canvasRef} className="hidden" />
-      </div>
-    )
-  }
+  const isValid =
+    formData.brand &&
+    formData.serialNumber &&
+    formData.reference &&
+    formData.currentKm &&
+    (!photoRequired || formData.proofPhotos.length > 0)
 
   return (
     <div className="flex flex-col min-h-screen p-4 pb-8">
-      {/* Header */}
+      {/* En-tête */}
       <header className="mb-4">
-        <button 
+        <button
           onClick={prevStep}
-          className="flex items-center gap-2 text-sm text-muted-foreground mb-3 active:opacity-70"
+          className="flex items-center gap-2 text-sm text-muted-foreground mb-3 active:opacity-70 min-h-[44px]"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Retour
         </button>
-        <h1 className="text-xl font-semibold text-foreground">Details Pneu</h1>
+        <h1 className="text-xl font-semibold text-foreground">Détails du pneu</h1>
         <p className="text-sm text-muted-foreground">
-          Renseignez les informations du pneu
+          Marque, numéro, référence, km
         </p>
       </header>
 
-      {/* Form */}
+      {/* Formulaire */}
       <div className="flex-1 space-y-4 overflow-auto -mx-4 px-4">
-        {/* Brand */}
+        {/* Marque */}
         <div>
           <label className="text-sm font-medium text-foreground mb-2 block">
             Marque
@@ -234,10 +130,10 @@ export function TireDetailsForm() {
                 key={brand}
                 onClick={() => setFormData(prev => ({ ...prev, brand }))}
                 className={cn(
-                  "py-3 px-4 rounded-xl text-sm font-medium transition-all active:scale-[0.98]",
+                  'py-3 px-4 rounded-sm text-sm font-medium transition-all active:scale-[0.98] min-h-[44px]',
                   formData.brand === brand
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border-2 border-border text-foreground hover:border-primary/40"
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card border-2 border-border text-foreground'
                 )}
               >
                 {brand}
@@ -246,36 +142,23 @@ export function TireDetailsForm() {
           </div>
         </div>
 
-        {/* Serial Number */}
+        {/* Numéro de série */}
         <div>
           <label className="text-sm font-medium text-foreground mb-2 block">
-            N de serie
+            Numéro de série
           </label>
-          <div className="flex gap-2">
-            <Input
-              value={formData.serialNumber}
-              onChange={(e) => setFormData(prev => ({ ...prev, serialNumber: e.target.value }))}
-              placeholder="Scanner ou saisir..."
-              className="h-12 text-base bg-card border-border font-mono flex-1"
-            />
-            <button
-              onClick={() => startCamera('barcode')}
-              className="h-12 w-12 rounded-xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-primary"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-              </svg>
-            </button>
-          </div>
-          {cameraError && (
-            <p className="text-xs text-destructive mt-1">{cameraError}</p>
-          )}
+          <Input
+            value={formData.serialNumber}
+            onChange={(e) => setFormData(prev => ({ ...prev, serialNumber: e.target.value }))}
+            placeholder="Saisir le numéro…"
+            className="h-12 text-base bg-card border-border font-mono rounded-sm"
+          />
         </div>
 
-        {/* Reference */}
+        {/* Référence */}
         <div>
           <label className="text-sm font-medium text-foreground mb-2 block">
-            Reference
+            Référence
           </label>
           <div className="flex flex-wrap gap-2">
             {REFERENCES.map(ref => (
@@ -283,10 +166,10 @@ export function TireDetailsForm() {
                 key={ref}
                 onClick={() => setFormData(prev => ({ ...prev, reference: ref }))}
                 className={cn(
-                  "py-2 px-3 rounded-lg text-sm font-mono transition-all active:scale-[0.98]",
+                  'py-3 px-4 rounded-sm text-sm font-mono transition-all active:scale-[0.98] min-h-[44px]',
                   formData.reference === ref
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card border-2 border-border text-foreground hover:border-primary/40"
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card border-2 border-border text-foreground'
                 )}
               >
                 {ref}
@@ -295,41 +178,49 @@ export function TireDetailsForm() {
           </div>
         </div>
 
-        {/* Current KM */}
+        {/* Km actuel */}
         <div>
           <label className="text-sm font-medium text-foreground mb-2 block">
             Km actuel
           </label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              inputMode="numeric"
-              value={formData.currentKm}
-              onChange={(e) => setFormData(prev => ({ ...prev, currentKm: e.target.value }))}
-              placeholder="82000"
-              className="h-12 text-base bg-card border-border font-mono flex-1"
-            />
-            <button
-              onClick={() => startCamera('odometer')}
-              className="h-12 w-12 rounded-xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center text-primary"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-          </div>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={formData.currentKm}
+            onChange={(e) => setFormData(prev => ({ ...prev, currentKm: e.target.value }))}
+            placeholder="82000"
+            className="h-12 text-base bg-card border-border font-mono rounded-sm"
+          />
         </div>
 
-        {/* Divider */}
+        {/* Usure */}
         <div className="border-t border-border pt-4">
-          <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Mesure epaisseur (mm)
+          <button
+            onClick={() => setWear(prev => !prev)}
+            className={cn(
+              'w-full flex items-center justify-between gap-3 p-4 rounded-sm border-2 transition-all active:scale-[0.98] min-h-[56px]',
+              wear ? 'bg-warning/10 border-warning/50' : 'bg-card border-border'
+            )}
+          >
+            <span className="text-sm font-medium text-foreground text-left">
+              Usure constatée
+              <span className="block text-xs text-muted-foreground">Photo obligatoire si oui</span>
+            </span>
+            <span className={cn(
+              'w-12 h-7 rounded-full flex items-center px-1 transition-colors',
+              wear ? 'bg-warning justify-end' : 'bg-muted justify-start'
+            )}>
+              <span className="w-5 h-5 rounded-full bg-card" />
+            </span>
+          </button>
+        </div>
+
+        {/* Mesure épaisseur */}
+        <div className="border-t border-border pt-4">
+          <h2 className="text-base font-semibold text-foreground mb-3">
+            Épaisseur (mm)
           </h2>
-          
+
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block text-center">EXT</label>
@@ -340,7 +231,7 @@ export function TireDetailsForm() {
                 value={treadDepth.exterior || ''}
                 onChange={(e) => setTreadDepth(prev => ({ ...prev, exterior: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.0"
-                className="h-12 text-center text-lg bg-card border-border font-mono"
+                className="h-12 text-center text-lg bg-card border-border font-mono rounded-sm"
               />
             </div>
             <div>
@@ -352,7 +243,7 @@ export function TireDetailsForm() {
                 value={treadDepth.center || ''}
                 onChange={(e) => setTreadDepth(prev => ({ ...prev, center: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.0"
-                className="h-12 text-center text-lg bg-card border-border font-mono"
+                className="h-12 text-center text-lg bg-card border-border font-mono rounded-sm"
               />
             </div>
             <div>
@@ -364,27 +255,27 @@ export function TireDetailsForm() {
                 value={treadDepth.interior || ''}
                 onChange={(e) => setTreadDepth(prev => ({ ...prev, interior: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.0"
-                className="h-12 text-center text-lg bg-card border-border font-mono"
+                className="h-12 text-center text-lg bg-card border-border font-mono rounded-sm"
               />
             </div>
           </div>
-          
-          {/* Tread depth indicator */}
+
+          {/* Min épaisseur */}
           {(treadDepth.exterior > 0 || treadDepth.center > 0 || treadDepth.interior > 0) && (
-            <div className="mt-2 p-2 rounded-lg bg-card border border-border">
+            <div className="mt-2 p-2 rounded-sm bg-card border border-border">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Min:</span>
+                <span className="text-muted-foreground">Mini :</span>
                 <span className={cn(
-                  "font-mono font-medium",
-                  Math.min(treadDepth.exterior || 99, treadDepth.center || 99, treadDepth.interior || 99) < 3 
-                    ? "text-destructive" 
+                  'font-mono font-medium',
+                  Math.min(treadDepth.exterior || 99, treadDepth.center || 99, treadDepth.interior || 99) < 3
+                    ? 'text-destructive'
                     : Math.min(treadDepth.exterior || 99, treadDepth.center || 99, treadDepth.interior || 99) < 5
-                    ? "text-warning"
-                    : "text-success"
+                    ? 'text-warning'
+                    : 'text-success'
                 )}>
                   {Math.min(
-                    treadDepth.exterior || 99, 
-                    treadDepth.center || 99, 
+                    treadDepth.exterior || 99,
+                    treadDepth.center || 99,
                     treadDepth.interior || 99
                   ).toFixed(1)} mm
                 </span>
@@ -393,16 +284,13 @@ export function TireDetailsForm() {
           )}
         </div>
 
-        {/* Decision Notebook Section */}
+        {/* Carnet de décision */}
         <div className="border-t border-border pt-4">
-          <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-            Carnet de decision
+          <h2 className="text-base font-semibold text-foreground mb-3">
+            Carnet de décision
           </h2>
 
-          {/* Preset Observations */}
+          {/* Observations rapides */}
           <div className="mb-3">
             <label className="text-sm font-medium text-foreground mb-2 block">
               Observation
@@ -411,15 +299,15 @@ export function TireDetailsForm() {
               {PRESET_OBSERVATIONS.map(obs => (
                 <button
                   key={obs}
-                  onClick={() => setDecisionNote(prev => ({ 
-                    ...prev, 
-                    observation: prev.observation === obs ? '' : obs 
+                  onClick={() => setDecisionNote(prev => ({
+                    ...prev,
+                    observation: prev.observation === obs ? '' : obs,
                   }))}
                   className={cn(
-                    "py-2 px-3 rounded-lg text-xs transition-all active:scale-[0.98]",
+                    'py-2 px-3 rounded-sm text-xs transition-all active:scale-[0.98] min-h-[40px]',
                     decisionNote.observation === obs
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-card border border-border text-foreground hover:border-primary/40"
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card border border-border text-foreground'
                   )}
                 >
                   {obs}
@@ -428,24 +316,24 @@ export function TireDetailsForm() {
             </div>
           </div>
 
-          {/* Escalation */}
+          {/* Escalade */}
           <div className="mb-3">
             <label className="text-sm font-medium text-foreground mb-2 block">
-              Escalader vers
+              Prévenir qui ?
             </label>
             <div className="grid grid-cols-2 gap-2">
               {(Object.keys(ESCALATION_LABELS) as EscalationTarget[]).map(target => (
                 <button
                   key={target}
-                  onClick={() => setDecisionNote(prev => ({ 
-                    ...prev, 
-                    escalation: prev.escalation === target ? undefined : target 
+                  onClick={() => setDecisionNote(prev => ({
+                    ...prev,
+                    escalation: prev.escalation === target ? undefined : target,
                   }))}
                   className={cn(
-                    "py-3 px-4 rounded-xl text-sm font-medium transition-all active:scale-[0.98]",
+                    'py-3 px-4 rounded-sm text-sm font-medium transition-all active:scale-[0.98] min-h-[44px]',
                     decisionNote.escalation === target
-                      ? "bg-warning/20 border-2 border-warning text-warning"
-                      : "bg-card border-2 border-border text-foreground hover:border-warning/40"
+                      ? 'bg-warning/20 border-2 border-warning text-warning'
+                      : 'bg-card border-2 border-border text-foreground'
                   )}
                 >
                   {ESCALATION_LABELS[target]}
@@ -454,7 +342,7 @@ export function TireDetailsForm() {
             </div>
           </div>
 
-          {/* Urgency */}
+          {/* Urgence */}
           <div className="mb-3">
             <label className="text-sm font-medium text-foreground mb-2 block">
               Urgence
@@ -465,16 +353,16 @@ export function TireDetailsForm() {
                   key={level}
                   onClick={() => setDecisionNote(prev => ({ ...prev, urgency: level }))}
                   className={cn(
-                    "py-3 px-4 rounded-xl text-sm font-medium transition-all active:scale-[0.98]",
+                    'py-3 px-4 rounded-sm text-sm font-medium transition-all active:scale-[0.98] min-h-[44px]',
                     decisionNote.urgency === level
-                      ? level === 'immediate' 
-                        ? "bg-destructive text-destructive-foreground"
+                      ? level === 'immediate'
+                        ? 'bg-destructive text-destructive-foreground'
                         : level === 'today'
-                        ? "bg-warning/20 border-2 border-warning text-warning"
+                        ? 'bg-warning/20 border-2 border-warning text-warning'
                         : level === 'week'
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                      : "bg-card border-2 border-border text-foreground hover:border-primary/40"
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                      : 'bg-card border-2 border-border text-foreground'
                   )}
                 >
                   {URGENCY_LABELS[level].label}
@@ -483,42 +371,45 @@ export function TireDetailsForm() {
             </div>
           </div>
 
-          {/* Custom Comment */}
+          {/* Commentaire libre */}
           <div>
             <label className="text-sm font-medium text-foreground mb-2 block">
-              Commentaire libre
+              Commentaire
             </label>
             <textarea
               value={decisionNote.customComment}
               onChange={(e) => setDecisionNote(prev => ({ ...prev, customComment: e.target.value }))}
-              placeholder="Notes supplementaires..."
+              placeholder="Notes en plus…"
               rows={2}
-              className="w-full p-3 rounded-xl bg-card border-2 border-border text-foreground text-sm resize-none focus:outline-none focus:border-primary/50"
+              className="w-full p-3 rounded-sm bg-card border-2 border-border text-foreground text-sm resize-none focus:outline-none focus:border-primary/50"
             />
           </div>
         </div>
 
-        {/* Proof Photos Section */}
+        {/* Photos preuve (input fichier natif) */}
         <div className="border-t border-border pt-4">
-          <h2 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
-            <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Photos preuve {isEclatement && <span className="text-destructive">*</span>}
+          <h2 className="text-base font-semibold text-foreground mb-1">
+            Photo preuve {photoRequired && <span className="text-destructive">*</span>}
           </h2>
+          {photoRequired && (
+            <p className="text-xs text-destructive mb-3">
+              Obligatoire pour {isRemove ? 'une dépose' : 'une usure'}
+            </p>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             {formData.proofPhotos.map((photo, idx) => (
               <div key={idx} className="relative aspect-square">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photo}
                   alt={`Preuve ${idx + 1}`}
-                  className="w-full h-full object-cover rounded-xl"
+                  className="w-full h-full object-cover rounded-sm"
                 />
                 <button
                   onClick={() => removeProofPhoto(idx)}
-                  className="absolute top-2 right-2 w-7 h-7 bg-background/80 rounded-full flex items-center justify-center"
+                  aria-label="Supprimer la photo"
+                  className="absolute top-2 right-2 w-9 h-9 bg-background/80 rounded-sm flex items-center justify-center"
                 >
                   <svg className="w-4 h-4 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -526,29 +417,43 @@ export function TireDetailsForm() {
                 </button>
               </div>
             ))}
-            
+
             {formData.proofPhotos.length < 4 && (
               <button
-                onClick={() => startCamera('proof')}
+                onClick={() => proofInputRef.current?.click()}
                 className={cn(
-                  "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors",
-                  isEclatement && formData.proofPhotos.length === 0
-                    ? "border-destructive/50 bg-destructive/5"
-                    : "border-border bg-card hover:border-primary/40"
+                  'aspect-square rounded-sm border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors',
+                  photoRequired && formData.proofPhotos.length === 0
+                    ? 'border-destructive/50 bg-destructive/5'
+                    : 'border-border bg-card'
                 )}
               >
                 <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span className="text-xs text-muted-foreground">
-                  {formData.proofPhotos.length}/4
+                  Prendre une photo ({formData.proofPhotos.length}/4)
                 </span>
               </button>
             )}
           </div>
+
+          {/* Caméra native HTML5 (pas de getUserMedia) */}
+          <input
+            ref={proofInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              handleProofFiles(e.target.files)
+              e.target.value = ''
+            }}
+          />
         </div>
 
-        {/* Profile (optional) */}
+        {/* Profil (optionnel) */}
         <div>
           <label className="text-sm font-medium text-foreground mb-2 block">
             Profil <span className="text-muted-foreground">(optionnel)</span>
@@ -556,35 +461,35 @@ export function TireDetailsForm() {
           <Input
             value={formData.profile}
             onChange={(e) => setFormData(prev => ({ ...prev, profile: e.target.value }))}
-            placeholder="Ex: usure normale, recreuse..."
-            className="h-12 text-base bg-card border-border"
+            placeholder="Ex : usure normale, recreusé…"
+            className="h-12 text-base bg-card border-border rounded-sm"
           />
         </div>
       </div>
 
-      {/* Continue Button */}
+      {/* Bouton continuer (bas d'écran · pouce) */}
       <button
         onClick={handleContinue}
         disabled={!isValid}
         className={cn(
-          "mt-4 w-full py-4 rounded-xl font-semibold transition-all active:scale-[0.98]",
+          'mt-4 w-full py-4 rounded-sm font-semibold transition-all active:scale-[0.98] min-h-[44px]',
           isValid
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground cursor-not-allowed"
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted text-muted-foreground cursor-not-allowed'
         )}
       >
-        Verifier
+        Vérifier
       </button>
 
-      {/* Step indicator */}
+      {/* Indicateur d'étape */}
       <footer className="mt-4 pt-4 border-t border-border">
         <div className="flex justify-center gap-2">
           {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
               className={cn(
-                "w-2 h-2 rounded-full transition-colors",
-                s <= 3 ? "bg-primary" : "bg-muted"
+                'w-2 h-2 rounded-full transition-colors',
+                s <= 3 ? 'bg-primary' : 'bg-muted'
               )}
             />
           ))}

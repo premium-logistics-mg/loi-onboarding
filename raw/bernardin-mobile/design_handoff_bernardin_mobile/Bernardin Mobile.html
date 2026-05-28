@@ -1,0 +1,247 @@
+<!doctype html>
+<html class="dark" lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1400">
+  <title>Bernardin · Module mobile · D82 dark · harvest reference</title>
+  <link rel="stylesheet" href="design-tokens.css">
+  <style>
+    html, body { height: 100%; margin: 0; background: #1d1d20; }
+    #app { width: 100%; height: 100%; }
+    /* Tighter look for the canvas surface */
+    body { color: #F0EEEB; font-family: "Inter", sans-serif; }
+    /* Lock all anchors used as in-screen "links" — they're decorative on the canvas */
+    .phone a { pointer-events: none; }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+
+  <!-- chrome & atoms -->
+  <script type="text/babel" src="components/MobileChrome.jsx"></script>
+  <script type="text/babel" src="components/Atoms.jsx"></script>
+
+  <!-- screens -->
+  <script type="text/babel" src="components/HomeJour.jsx"></script>
+  <script type="text/babel" src="components/VueDossier.jsx"></script>
+  <script type="text/babel" src="components/Modales.jsx"></script>
+  <script type="text/babel" src="components/Scorecards.jsx"></script>
+  <script type="text/babel" src="components/CarnetProfil.jsx"></script>
+  <script type="text/babel" src="components/ModaleExtras.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const W = window.PHONE_W;
+    const H = window.PHONE_H;
+
+    // Inline shell: each phone IS a DCArtboard (DCSection filters by .type === DCArtboard).
+    function Phone({ id, label, children }) {
+      return (
+        <div className="phone" style={{ width: W, height: H }}>
+          {children}
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="cover"
+            title="Bernardin · Module mobile"
+            subtitle="Agent terrain port Toamasina · D82 dark · 8 écrans + 3 placeholders Mode E · viewport 390 px"
+          >
+            <CoverNotes />
+          </DCSection>
+
+          <DCSection
+            id="root"
+            title="Écrans racine"
+            subtitle="Home jour · Vue dossier · Scorecards · Carnet + Profil"
+          >
+            <DCArtboard id="s1-home" label="01 · Home jour" width={W} height={H}>
+              <Phone><HomeJour /></Phone>
+            </DCArtboard>
+            <DCArtboard id="s2-dossier" label="02 · Vue dossier · timeline + 3 actions" width={W} height={H}>
+              <Phone><VueDossier /></Phone>
+            </DCArtboard>
+            <DCArtboard id="s7-scorecards" label="07 · Scorecards · 4 KPIs B-K01..04" width={W} height={H}>
+              <Phone><Scorecards /></Phone>
+            </DCArtboard>
+            <DCArtboard id="s8-carnet" label="08 · Carnet de bord + Profil" width={W} height={H}>
+              <Phone><CarnetProfil /></Phone>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="modales"
+            title="Modales d'action · Pattern 9 anti-blind-POST"
+            subtitle="Chaque CTA ouvre une vraie modale formulaire · capture photo + signature + trace M13"
+          >
+            <DCArtboard id="s3-visite" label="03 · Visite douanière Rouge · A 13a" width={W} height={H}>
+              <Phone><ModaleVisiteDouane /></Phone>
+            </DCArtboard>
+            <DCArtboard id="s4-livraison" label="04 · Livraison client · A 15" width={W} height={H}>
+              <Phone><ModaleLivraison /></Phone>
+            </DCArtboard>
+            <DCArtboard id="s5-restitution" label="05 · Restitution vide · A 16" width={W} height={H}>
+              <Phone><ModaleRestitution /></Phone>
+            </DCArtboard>
+            <DCArtboard id="s6-empotage" label="06 · Empotage marchandise · E 15" width={W} height={H}>
+              <Phone><ModaleEmpotage /></Phone>
+            </DCArtboard>
+            <DCArtboard id="s9-mode-e-extras" label="09 · Mode E placeholders · 10 · 14 · 16" width={W} height={H}>
+              <Phone><ModaleExtras /></Phone>
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    function CoverNotes() {
+      return (
+        <div
+          style={{
+            width: 760,
+            background: "#0F131D",
+            border: "1px solid #242835",
+            borderRadius: 10,
+            padding: "26px 28px",
+            color: "#F0EEEB",
+            fontFamily: "Inter, sans-serif",
+            lineHeight: 1.55,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "IBM Plex Mono, monospace",
+              fontSize: 10.5,
+              color: "#3EAA9B",
+              letterSpacing: "0.10em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+              marginBottom: 10,
+            }}
+          >
+            Visual reference · D82 dark · harvest CC
+          </div>
+          <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: "-0.015em", margin: "0 0 14px" }}>
+            Module mobile Bernardin · Agent terrain port Toamasina
+          </h2>
+          <p style={{ margin: "0 0 16px", color: "rgba(240,238,235,0.78)", fontSize: 13.5 }}>
+            Outil de travail mobile · pas un dashboard reporting. Bernardin orchestre 7 étapes physiques port —
+            3 en Mode A (import direct conteneurisé · 13a · 15 · 16) et 4 en Mode E (export mining · 10 · 14 · 15 · 16).
+            Pilier P4 fluidité · objectif SO·2 Order-to-Cash. 100 % terrain · gants · soleil · jamais devant un PC.
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 20,
+              padding: "16px 0 6px",
+              borderTop: "1px solid #242835",
+              marginTop: 8,
+            }}
+          >
+            <Block title="Système retenu">
+              <Bullet>Phone shell 390 × 844 · status bar minimaliste · safe-area haute</Bullet>
+              <Bullet>Header navy <code>#0B2540</code> uniquement sur modales (différencie contexte action)</Bullet>
+              <Bullet>Cartes dossier 1 px navy bord gauche colorée (prio) — pas de fond saturé</Bullet>
+              <Bullet>Hero numérique IBM Plex Mono · vert silencieux <code>#5BC58B</code>, jamais fanfare</Bullet>
+              <Bullet>Touch ≥ 52 px sur CTA primaires · 48 px sur secondaires</Bullet>
+              <Bullet>3 photos max par modale · slots dashed quand vides, schematic SVG quand remplis</Bullet>
+              <Bullet>Footer M13 sur toutes modales · GPS + timestamp + owner Bernardin</Bullet>
+            </Block>
+            <Block title="Anti-patterns respectés">
+              <Bullet><strong>P9</strong> · chaque bouton ouvre une modale formulaire · 0 blind POST</Bullet>
+              <Bullet><strong>P30</strong> · 0 label « KIORA » UI · on dit « dossier opérationnel »</Bullet>
+              <Bullet>0 push auto · banner offline sur Scorecards uniquement (mock)</Bullet>
+              <Bullet>0 emoji · 0 décor · 0 gradient · 0 cyan/violet</Bullet>
+              <Bullet>Allow-list client respectée · 0 client inventé (PENTA-OCEAN · ANDIS · MG-MINE · NS · YUE FENG)</Bullet>
+              <Bullet>CrossLinkNav vers <code>/cockpit/tudi</code> sur Vue dossier</Bullet>
+            </Block>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              padding: 14,
+              background: "rgba(199, 126, 42, 0.06)",
+              border: "1px solid rgba(199, 126, 42, 0.28)",
+              borderRadius: 6,
+              fontSize: 12.5,
+              color: "rgba(240,238,235,0.85)",
+            }}
+          >
+            <strong style={{ color: "#E3A053" }}>Question préalable Kenny</strong> · smartphone PL pro vs perso non répondu.
+            Hypothèse retenue · Android moyen-gamme 6.1" · Chrome 100+ · APN moyen · compression photo 1280 px · 70 %
+            (réglable Profil).
+          </div>
+
+          <div style={{ display: "flex", gap: 12, marginTop: 14, flexWrap: "wrap" }}>
+            <Token swatch="#080B14" label="bg" />
+            <Token swatch="#161A24" label="card" />
+            <Token swatch="#0B2540" label="navy (modale header)" />
+            <Token swatch="#1A8E7E" label="teal CTA" />
+            <Token swatch="#3EAA9B" label="teal accent" />
+            <Token swatch="#5BC58B" label="ok" />
+            <Token swatch="#E3A053" label="warn" />
+            <Token swatch="#E4734D" label="err" />
+            <Token swatch="#F0EEEB" label="cream text" />
+          </div>
+        </div>
+      );
+    }
+
+    function Block({ title, children }) {
+      return (
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "rgba(240,238,235,0.6)",
+              textTransform: "uppercase",
+              letterSpacing: "0.10em",
+              marginBottom: 8,
+            }}
+          >
+            {title}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12.5 }}>
+            {children}
+          </div>
+        </div>
+      );
+    }
+
+    function Bullet({ children }) {
+      return (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, color: "rgba(240,238,235,0.78)" }}>
+          <span style={{ flexShrink: 0, marginTop: 7, width: 4, height: 4, background: "#3EAA9B", borderRadius: 999 }} />
+          <span style={{ lineHeight: 1.5 }}>{children}</span>
+        </div>
+      );
+    }
+
+    function Token({ swatch, label }) {
+      return (
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "#161A24", border: "1px solid #242835", borderRadius: 4 }}>
+          <span style={{ width: 14, height: 14, borderRadius: 3, background: swatch, border: "1px solid rgba(255,255,255,0.06)" }} />
+          <span style={{ fontFamily: "IBM Plex Mono, monospace", fontSize: 10, color: "rgba(240,238,235,0.85)", letterSpacing: "-0.01em" }}>
+            {swatch} · {label}
+          </span>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("app")).render(<App />);
+  </script>
+</body>
+</html>
